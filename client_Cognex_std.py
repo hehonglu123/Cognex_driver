@@ -4,11 +4,9 @@ from RobotRaconteur.Client import *
 
 import numpy as np
 import time,traceback,sys
-sys.path.append('../toolbox')
 from autodiscovery import autodiscover
 
 ####################Start Service and robot setup
-# url='rr+tcp://[fe80::922f:c9e6:5fe5:51d1]:52222/?nodeid=87518815-d3a3-4e33-a1be-13325da2461f&service=cognex'
 #auto discovery
 time.sleep(2)
 url=autodiscover("edu.robotraconteur.objectrecognition.ObjectRecognitionSensor","cognex")
@@ -19,10 +17,7 @@ if url==None:
 object_recognition_sensor_data =None
 def new_frame(pipe_ep):
     global object_recognition_sensor_data 
-    try:
-        print(object_recognition_sensor_data.recognized_objects.recognized_objects[0].recognized_object.name)
-    except:
-        traceback.print_exc()
+
     #Loop to get the newest frame
     while (pipe_ep.Available > 0):
         #Receive the packet
