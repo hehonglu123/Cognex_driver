@@ -1,4 +1,4 @@
-service edu.cognex
+service edu.robotraconteur.objectrecognition
 
 stdver 0.10
 
