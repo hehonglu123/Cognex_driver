@@ -4,6 +4,8 @@
 
 import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
+import RobotRaconteurCompanion as RRC
+
 import numpy as np
 import socket, threading, traceback, copy, time, os, signal
 
@@ -35,10 +37,10 @@ class create_impl(object):
 		
 		#initialize objrecog structures
 		self._object_recognition_sensor_data=None
-		self.object_recognition_sensor_data_data=RRN.NewStructure("edu.robotraconteur.objectrecognition.ObjectRecognitionSensorData")
-		self.object_recognition_sensor_data_data.recognized_objects=RRN.NewStructure("edu.robotraconteur.objectrecognition.RecognizedObjects") 	#recognized_objects
+		self.object_recognition_sensor_data_data=RRN.NewStructure("com.robotraconteur.objectrecognition.ObjectRecognitionSensorData")
+		self.object_recognition_sensor_data_data.recognized_objects=RRN.NewStructure("com.robotraconteur.objectrecognition.RecognizedObjects") 	#recognized_objects
 
-		self.recognized_object=RRN.NewStructure("edu.robotraconteur.objectrecognition.RecognizedObject")
+		self.recognized_object=RRN.NewStructure("com.robotraconteur.objectrecognition.RecognizedObject")
 		self.recognized_object.recognized_object=RRN.NewStructure("com.robotraconteur.identifier.Identifier")					#name,uuid
 		uuid_dtype=RRN.GetNamedArrayDType("com.robotraconteur.uuid.UUID")
 		self.recognized_object.recognized_object.uuid=np.zeros((1,),dtype=uuid_dtype)
@@ -49,7 +51,7 @@ class create_impl(object):
 
 		#initialize detection obj map
 		self.detection_objects={}
-		self.detection_obj=RRN.NewStructure("edu.robotraconteur.objectrecognition.detection_obj")
+		self.detection_obj=RRN.NewStructure("edu.robotraconteur.cognexsensor.detection_obj")
 		self.models=['t_f','p_f','s_f','b_f','eef']
 		for name in self.models:
 			self.detection_objects[name]=copy.deepcopy(self.detection_obj)
@@ -106,6 +108,8 @@ class create_impl(object):
 					self.detection_wire.OutValue=self.detection_objects
 					#pass to RR pipe
 					self.object_recognition_sensor_data.SendPacket(self.object_recognition_sensor_data_data)  
+				except AttributeError:
+					pass
 				except:
 					traceback.print_exc()
 
@@ -113,8 +117,10 @@ class create_impl(object):
 
 with RR.ServerNodeSetup("cognex_Service", 52222) as node_setup:
 	#register objdet robdef
-	os.chdir('/home/ubuntu/catkin_ws/src/robotraconteur_companion/robdef/group1')
-	RRN.RegisterServiceTypesFromFiles(['edu.robotraconteur.objectrecognition.robdef'],True) 
+	# os.chdir('/home/ubuntu/catkin_ws/src/robotraconteur_companion/robdef/group1')
+	# RRN.RegisterServiceTypesFromFiles(['edu.robotraconteur.objectrecognition.robdef'],True)
+	RRC. RegisterStdRobDefServiceTypes(RRN)
+	RRN.RegisterServiceTypeFromFile('edu.robotraconteur.cognexsensor.robdef')
 
 	cognex_inst=create_impl()
 	cognex_inst.start()
@@ -126,7 +132,7 @@ with RR.ServerNodeSetup("cognex_Service", 52222) as node_setup:
 		print('object y:', value.y)
 		print('object angle:', value.angle)
 
-	RRN.RegisterService("cognex", "edu.robotraconteur.objectrecognition.ObjectRecognitionSensor", cognex_inst)
+	RRN.RegisterService("cognex", "edu.robotraconteur.cognexsensor.CognexSensor", cognex_inst)
 
 	print("press ctrl+c to quit")
 	signal.sigwait([signal.SIGTERM,signal.SIGINT])

@@ -1,4 +1,4 @@
-service edu.robotraconteur.objectrecognition
+service edu.robotraconteur.cognexsensor
 
 stdver 0.10
 
@@ -8,6 +8,7 @@ import com.robotraconteur.geometry.shapes
 import com.robotraconteur.param
 import com.robotraconteur.device
 import com.robotraconteur.device.isoch
+import com.robotraconteur.device.clock
 import com.robotraconteur.sensor
 import com.robotraconteur.objectrecognition
 
@@ -29,6 +30,9 @@ using com.robotraconteur.objectrecognition.RecognizedObject
 using com.robotraconteur.objectrecognition.RecognizedObjects
 using com.robotraconteur.objectrecognition.ObjectRecognitionSensorInfo
 using com.robotraconteur.objectrecognition.ObjectRecognitionSensorData
+using com.robotraconteur.device.clock.DeviceClock
+using com.robotraconteur.device.clock.DeviceTime
+
 
 struct detection_obj
     field string name
@@ -43,6 +47,7 @@ end
 
 object CognexSensor
     implements Device
+    implements DeviceClock
     implements IsochDevice
     implements ObjectRecognitionSensor
     property DeviceInfo device_info [readonly,nolock]
@@ -57,4 +62,5 @@ object CognexSensor
     function ObjectRecognitionTemplate getf_object_class_template(Identifier object_class)
     property IsochInfo isoch_info [readonly,nolock]
     property uint32 isoch_downsample [perclient]
+    wire DeviceTime device_clock_now [readonly,nolock]
 end
