@@ -18,7 +18,7 @@ Make Cognex camera trigger in Continuous mode, adjust image parameters according
 <img src="images/setup_final.PNG" alt="Alt Text" width="500" height="auto">
 
 ### Communication Setup
-Under `Communications`->`TCP/IP`, set up IP of the PC as `Server Host Name` as shown in 
+Under `Communications`->`TCP/IP`, set up IP of the PC as `Server Host Name` as shown in
 <img src="images/communication.PNG" alt="Alt Text" width="500" height="auto">
 
 To format the message, go to `Format Output String` -> `Format String...`, and follow the same structure as shown in image below for every object. Notice maximum output string length is 255.
@@ -26,4 +26,3 @@ To format the message, go to `Format Output String` -> `Format String...`, and f
 
 ## RR Service for Cognex
 `Cognex_objdet.py` provides an RR service wrapper for a socket connection with Cognex camera directly. This is highly customized from `final_with_no_objects.job` loaded in Cognex to parse the formatted string into pose data.
-

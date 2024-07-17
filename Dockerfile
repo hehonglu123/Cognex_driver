@@ -10,7 +10,7 @@ RUN sudo add-apt-repository ppa:robotraconteur/ppa -y \
 RUN python3 -m pip install --upgrade pip
 
 COPY . ./
-RUN python3 -m pip install . 
+RUN python3 -m pip install .
 
 COPY ./config/*.yml /config/
 

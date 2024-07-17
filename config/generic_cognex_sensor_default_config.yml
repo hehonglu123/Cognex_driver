@@ -9,11 +9,10 @@ device_info:
     uuid: ea19327e-f3f1-4a19-a098-d760450aab46
   serial_number: 0
   device_classes:
-    - class_identifier:
-        name: object_recognition_sensor
-        uuid: 5a52e2b1-3b05-4861-9034-23f3a9beb625
-      subclasses:
-        - planar_object_recognition_sensor
+  - class_identifier:
+      name: object_recognition_sensor
+      uuid: 5a52e2b1-3b05-4861-9034-23f3a9beb625
+    subclasses:
+    - planar_object_recognition_sensor
   implemented_types:
-    - com.robotraconteur.objectrecognition.ObjectRecognitionSensor
-  
+  - com.robotraconteur.objectrecognition.ObjectRecognitionSensor
