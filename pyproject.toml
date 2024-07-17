@@ -1,0 +1,36 @@
+[project]
+
+name= "cognex-robotraconteur-driver"
+version = "0.2.0"
+description = "Robot Raconteur driver for Cognex In-Sight Vision sensors "
+requires-python = ">=3.6"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Honglu He", email = "hehonglu123@126.com"},
+    {name = "John Wason", email = "wason@wasontech.com"}
+]
+
+dependencies = [
+    'RobotRaconteur',
+    'RobotRaconteurCompanion',
+    'numpy',
+    'drekar-launch-process'
+]
+readme = "README.md"
+
+[project.urls]
+homepage = "https://github.com/robotraconteur-contrib/cognex_robotraconteur_driver"
+repository = "https://github.com/robotraconteur-contrib/cognex_robotraconteur_driver"
+
+[build-system]
+build-backend = 'setuptools.build_meta'
+requires = [
+    'setuptools',
+    'toml',
+]
+
+[project.scripts]
+cognex-robotraconteur-driver = "cognex_robotraconteur_driver.cognex_robotraconteur_driver:main"
+
+[tool.setuptools.package-data]
+"cognex_robotraconteur_driver" = ["*.robdef"]

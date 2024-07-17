@@ -9,6 +9,8 @@ from RobotRaconteurCompanion.Util.UuidUtil import UuidUtil
 from RobotRaconteurCompanion.Util.IdentifierUtil import IdentifierUtil
 from RobotRaconteurCompanion.Util.GeometryUtil import GeometryUtil
 from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
+from RobotRaconteurCompanion.Util.RobDef import register_service_types_from_resources
+import drekar_launch_process
 
 import numpy as np
 import socket, threading, traceback, copy, time, os, signal
@@ -149,20 +151,27 @@ class sensor_impl(object):
 				return ret
 			return copy.deepcopy(self._detected_objects)
 
-with RR.ServerNodeSetup("cognex_Service", 59901) as node_setup:
-	#register objdet robdef
-	# os.chdir('/home/ubuntu/catkin_ws/src/robotraconteur_companion/robdef/group1')
-	# RRN.RegisterServiceTypesFromFiles(['edu.robotraconteur.objectrecognition.robdef'],True)
-	RRC. RegisterStdRobDefServiceTypes(RRN)
-	RRN.RegisterServiceTypeFromFile('edu.robotraconteur.cognexsensor.robdef')
+def main():
 
-	cognex_inst=sensor_impl(None)
-	cognex_inst.start()
+	with RR.ServerNodeSetup("cognex_Service", 59901) as node_setup:
+		#register objdet robdef
 
-	RRN.RegisterService("cognex", "edu.robotraconteur.cognexsensor.CognexSensor", cognex_inst)
+		RRC.RegisterStdRobDefServiceTypes(RRN)
+		register_service_types_from_resources(RRN, __package__, ['edu.robotraconteur.cognexsensor.robdef'])
 
-	print("press ctrl+c to quit")
-	#signal.sigwait([signal.SIGTERM,signal.SIGINT])
-	input()
-	cognex_inst.close()
-	cognex_inst.s.close()
+		cognex_inst=sensor_impl(None)
+		cognex_inst.start()
+
+		ctx = RRN.RegisterService("cognex", "edu.robotraconteur.cognexsensor.CognexSensor", cognex_inst)
+
+		print("Cognex Service Started")
+		print()
+		print("Candidate connection urls:")
+		ctx.PrintCandidateConnectionURLs()
+		print()
+		print("Press Ctrl-C to quit...")
+
+		drekar_launch_process.wait_exit()
+		
+		cognex_inst.close()
+		cognex_inst.s.close()
