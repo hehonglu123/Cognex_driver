@@ -9,9 +9,11 @@ from RobotRaconteurCompanion.Util.UuidUtil import UuidUtil
 from RobotRaconteurCompanion.Util.IdentifierUtil import IdentifierUtil
 from RobotRaconteurCompanion.Util.GeometryUtil import GeometryUtil
 from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
+from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
+from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 from RobotRaconteurCompanion.Util.RobDef import register_service_types_from_resources
 import drekar_launch_process
-
+import argparse
 import numpy as np
 import socket, threading, traceback, copy, time, os, signal
 
@@ -33,7 +35,7 @@ class sensor_impl(object):
 	def __init__(self, object_sensor_info):
 
 		self.object_recognition_sensor_info = object_sensor_info
-		# self.device_info = object_sensor_info.device_info
+		self.device_info = object_sensor_info.device_info
 
 		#initialize socket connection
 		self.s=socket.socket()
@@ -123,7 +125,7 @@ class sensor_impl(object):
 				detected_objects[name] = detected_object
 
 		recognized_objects_sensor_data = self._object_recognition_sensor_data_type()
-		# recognized_objects_sensor_data.sensor_data = self._sensor_data_util.FillSensorDataHeader(self.device_info, self._seqno)
+		recognized_objects_sensor_data.sensor_data = self._sensor_data_util.FillSensorDataHeader(self.device_info, self._seqno)
 		recognized_objects_sensor_data.recognized_objects = self._recognized_objects_type()
 		recognized_objects_sensor_data.recognized_objects.recognized_objects = recognized_objects
 
@@ -203,16 +205,34 @@ class sensor_impl(object):
 
 def main():
 
+	parser = argparse.ArgumentParser(description="Cognex Sensor Robot Raconteur Driver")
+
+	parser.add_argument("--sensor-info-file", type=argparse.FileType('r'),default=None,required=True,help="Cognex sensor info file (required)")
+
+	args, _ = parser.parse_known_args()
+
+	RRC.RegisterStdRobDefServiceTypes(RRN)
+	register_service_types_from_resources(RRN, __package__, ['edu.robotraconteur.cognexsensor.robdef'])
+
+	with args.sensor_info_file:
+		sensor_info_text = args.sensor_info_file.read()
+
+	info_loader = InfoFileLoader(RRN)
+	sensor_info, sensor_ident_fd = info_loader.LoadInfoFileFromString(sensor_info_text, \
+                                            "com.robotraconteur.objectrecognition.ObjectRecognitionSensorInfo", "device")
+	
+	attributes_util = AttributesUtil(RRN)
+	sensor_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(sensor_info.device_info)
+    
+
+
 	with RR.ServerNodeSetup("cognex_Service", 59901) as node_setup:
-		#register objdet robdef
 
-		RRC.RegisterStdRobDefServiceTypes(RRN)
-		register_service_types_from_resources(RRN, __package__, ['edu.robotraconteur.cognexsensor.robdef'])
-
-		cognex_inst=sensor_impl(None)
+		cognex_inst=sensor_impl(sensor_info)
 		cognex_inst.start()
 
 		ctx = RRN.RegisterService("cognex", "edu.robotraconteur.cognexsensor.CognexSensor", cognex_inst)
+		ctx.SetServiceAttributes(sensor_attributes)
 
 		print("Cognex Service Started")
 		print()
