@@ -1,0 +1,18 @@
+device_info:
+  device:
+    name: cognex_sensor
+  manufacturer:
+    name: cognex
+    uuid: 15819a83-da77-4020-b284-ae3fc0b0f6c0
+  model:
+    name: generic_cognex_insight_sensor
+    uuid: ea19327e-f3f1-4a19-a098-d760450aab46
+  serial_number: 0
+  device_classes:
+  - class_identifier:
+      name: object_recognition_sensor
+      uuid: 5a52e2b1-3b05-4861-9034-23f3a9beb625
+    subclasses:
+    - planar_object_recognition_sensor
+  implemented_types:
+  - com.robotraconteur.objectrecognition.ObjectRecognitionSensor
