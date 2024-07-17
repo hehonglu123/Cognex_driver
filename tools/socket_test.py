@@ -2,7 +2,7 @@ import numpy as np
 import socket, threading, traceback, copy, time, os, signal
 
 
-host = '169.254.235.13'		#IP address of PC, align with Server Host Name in Insight TCP/IP Communication 
+host = '0.0.0.0'		#IP address of PC, align with Server Host Name in Insight TCP/IP Communication 
 port = 3000
 s=socket.socket()
 s.bind((host, port))
