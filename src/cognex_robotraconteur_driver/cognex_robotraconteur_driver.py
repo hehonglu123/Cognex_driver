@@ -38,8 +38,7 @@ class sensor_impl(object):
 		#initialize socket connection
 		self.s=socket.socket()
 		self.s.bind((host, port))
-		self.s.listen(5)
-		self.c,addr=self.s.accept()
+		self.s.listen(5)		
 
 		#threading setting
 		self._lock=threading.RLock()
@@ -77,6 +76,14 @@ class sensor_impl(object):
 		self._camera.start()
 	def close(self):
 		self._running = False
+		try:
+			self.s.close()
+		except:
+			pass
+		try:
+			self.c.close()
+		except:
+			pass
 		self._camera.join()
 
 	def parse_sensor_string(self, string_data):
@@ -125,11 +132,49 @@ class sensor_impl(object):
 		return recognized_objects_sensor_data, detected_objects
 
 	def _object_update(self):
-		while self._running:
-			try:
-				string_data = self.c.recv(1024).decode("utf-8") 
-					
 
+		connected = False
+		self.c = None
+
+		while self._running:
+
+			if not connected:
+				try:
+					self.c, addr = self.s.accept()
+					connected = True
+					print("Connected to Cognex sensor")
+				except:
+					time.sleep(0.5)
+					continue
+			
+			if not self._running:
+				break
+
+			try:
+				string_data = self.c.recv(1024).decode("utf-8")
+				if len(string_data) == 0:
+					if connected:
+						connected = False
+						try:
+							self.c.close()
+						except:
+							pass
+						print("Warning: Connection to Cognex sensor lost")				
+			except:
+				if connected:
+					connected = False
+					try:
+						self.c.close()
+					except:
+						pass
+					print("Warning: Connection to Cognex sensor lost")
+				time.sleep(0.5)
+				continue
+
+			if not self._running:
+				break
+
+			try:
 				object_recognition_sensor_data, detection_objects = self.parse_sensor_string(string_data)
 
 				with self._lock:
@@ -142,6 +187,11 @@ class sensor_impl(object):
 					self.object_recognition_sensor_data.SendPacket(object_recognition_sensor_data)
 			except:
 				traceback.print_exc()
+
+		try:
+			self.c.close()
+		except:
+			pass
 
 	def capture_recognized_objects(self):
 		with self._lock:
@@ -174,4 +224,3 @@ def main():
 		drekar_launch_process.wait_exit()
 		
 		cognex_inst.close()
-		cognex_inst.s.close()
