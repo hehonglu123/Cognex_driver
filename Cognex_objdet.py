@@ -101,6 +101,7 @@ class sensor_impl(object):
 				cov_pose = self._named_pose_cov_type()
 				cov_pose.pose = named_pose
 				recognized_object.pose = cov_pose
+				recognized_object.confidence = float(info[3])/100.
 				recognized_objects.append(recognized_object)
 				
 				#my type
