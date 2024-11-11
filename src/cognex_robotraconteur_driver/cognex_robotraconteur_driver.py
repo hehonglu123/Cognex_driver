@@ -22,6 +22,7 @@ import copy
 import time
 import os
 import signal
+import select
 
 host = '0.0.0.0'  # IP address of PC
 port = 3000
@@ -145,10 +146,12 @@ class sensor_impl(object):
 
         connected = False
         self.c = None
+        string_buf_rem = ""
 
         while self._running:
 
             if not connected:
+                string_buf_rem = ""
                 try:
                     self.c, addr = self.s.accept()
                     connected = True
@@ -161,6 +164,8 @@ class sensor_impl(object):
                 break
 
             try:
+                # Use select to wait for data
+                ready = select.select([self.c], [], [self.c], None)
                 string_data = self.c.recv(1024).decode("utf-8")
                 if len(string_data) == 0:
                     if connected:
@@ -183,6 +188,20 @@ class sensor_impl(object):
 
             if not self._running:
                 break
+
+            print(f"Received data: {string_data}")
+
+            string_data1 = string_buf_rem + string_data
+            string_data2 = string_data1.splitlines(keepends=True)
+
+            if string_data2[-1][-1] not in ['\n', '\r']:
+                string_buf_rem = string_data2[-1]
+                string_data2.pop(-1)
+
+            if (len(string_data2) == 0):
+                continue
+
+            string_data = string_data2[-1].strip()
 
             try:
                 object_recognition_sensor_data, detection_objects = self.parse_sensor_string(string_data)
