@@ -7,13 +7,11 @@ import time
 import os
 import signal
 
+# Switch to using device as socket server instead of reverse socket
 
-host = '0.0.0.0'  # IP address of PC, align with Server Host Name in Insight TCP/IP Communication
-port = 3000
-s = socket.socket()
-s.bind((host, port))
-s.listen(5)
-c, addr = s.accept()
+cognex_host = '192.168.1.175'  # IP address of cognex device
+cognex_port = 3000
+c = socket.create_connection((cognex_host, cognex_port))
 
 while True:
     string_data = c.recv(1024).decode("utf-8")

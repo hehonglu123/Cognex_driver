@@ -38,15 +38,11 @@ def multisplit(s, delims):
 
 
 class sensor_impl(object):
-    def __init__(self, object_sensor_info):
+    def __init__(self, object_sensor_info, cognex_addr):
 
         self.object_recognition_sensor_info = object_sensor_info
         self.device_info = object_sensor_info.device_info
-
-        # initialize socket connection
-        self.s = socket.socket()
-        self.s.bind((host, port))
-        self.s.listen(5)
+        self.cognex_addr = cognex_addr
 
         # threading setting
         self._lock = threading.RLock()
@@ -85,10 +81,6 @@ class sensor_impl(object):
 
     def close(self):
         self._running = False
-        try:
-            self.s.close()
-        except:
-            pass
         try:
             self.c.close()
         except:
@@ -153,7 +145,7 @@ class sensor_impl(object):
             if not connected:
                 string_buf_rem = ""
                 try:
-                    self.c, addr = self.s.accept()
+                    self.c = socket.create_connection(self.cognex_addr)
                     connected = True
                     print("Connected to Cognex sensor")
                 except:
@@ -237,8 +229,13 @@ def main():
 
     parser.add_argument("--sensor-info-file", type=argparse.FileType('r'), default=None,
                         required=True, help="Cognex sensor info file (required)")
+    parser.add_argument("--cognex-host", type=str, required=True,
+                        help="Cognex sensor IP address or hostname (required)")
+    parser.add_argument("--cognex-port", type=int, default=3000, help="Cognex sensor port (default 3000)")
 
     args, _ = parser.parse_known_args()
+
+    cognex_addr = (args.cognex_host, args.cognex_port)
 
     RRC.RegisterStdRobDefServiceTypes(RRN)
     register_service_types_from_resources(RRN, __package__, ['edu.robotraconteur.cognexsensor.robdef'])
@@ -255,7 +252,7 @@ def main():
 
     with RR.ServerNodeSetup("cognex_Service", 59901) as node_setup:
 
-        cognex_inst = sensor_impl(sensor_info)
+        cognex_inst = sensor_impl(sensor_info, cognex_addr)
         cognex_inst.start()
 
         ctx = RRN.RegisterService("cognex", "edu.robotraconteur.cognexsensor.CognexSensor", cognex_inst)
