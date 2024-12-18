@@ -14,7 +14,8 @@ dependencies = [
     'RobotRaconteur',
     'RobotRaconteurCompanion',
     'numpy',
-    'drekar-launch-process'
+    'drekar-launch-process',
+    'opencv-contrib-python'
 ]
 readme = "README.md"
 

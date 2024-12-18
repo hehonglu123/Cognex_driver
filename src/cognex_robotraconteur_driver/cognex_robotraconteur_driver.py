@@ -12,6 +12,7 @@ from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
 from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
 from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 from RobotRaconteurCompanion.Util.RobDef import register_service_types_from_resources
+from RobotRaconteurCompanion.Util.ImageUtil import ImageUtil
 import drekar_launch_process
 import argparse
 import numpy as np
@@ -24,8 +25,9 @@ import os
 import signal
 import select
 
-from ._native_client import native_exec_command
+from ._native_client import native_exec_command, native_read_image
 import re
+import cv2
 
 host = '0.0.0.0'  # IP address of PC
 port = 3000
@@ -57,6 +59,7 @@ class sensor_impl(object):
         self._identifier_util = IdentifierUtil(RRN)
         self._geometry_util = GeometryUtil(RRN)
         self._sensor_data_util = SensorDataUtil(RRN)
+        self._image_util = ImageUtil(RRN)
 
         # initialize objrecog types
         self._object_recognition_sensor_data_type = RRN.GetStructureType(
@@ -257,6 +260,13 @@ class sensor_impl(object):
         if event < 0 or event > 8:
             raise ValueError("Invalid event number")
         return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SW{event}", False)
+
+    def cognex_capture_image(self):
+        bmp_bytes = native_read_image(self.cognex_addr[0], self.cognex_pw)
+
+        img = cv2.imdecode(np.frombuffer(bmp_bytes, np.uint8), cv2.IMREAD_COLOR)
+
+        return self._image_util.array_to_image(img, 'bgr888')
 
 
 def main():
