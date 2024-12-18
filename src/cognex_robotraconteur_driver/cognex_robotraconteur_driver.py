@@ -24,6 +24,9 @@ import os
 import signal
 import select
 
+from ._native_client import native_exec_command
+import re
+
 host = '0.0.0.0'  # IP address of PC
 port = 3000
 
@@ -38,11 +41,12 @@ def multisplit(s, delims):
 
 
 class sensor_impl(object):
-    def __init__(self, object_sensor_info, cognex_addr):
+    def __init__(self, object_sensor_info, cognex_addr, cognex_pw):
 
         self.object_recognition_sensor_info = object_sensor_info
         self.device_info = object_sensor_info.device_info
         self.cognex_addr = cognex_addr
+        self.cognex_pw = cognex_pw
 
         # threading setting
         self._lock = threading.RLock()
@@ -222,6 +226,38 @@ class sensor_impl(object):
                 return ret
             return copy.deepcopy(self._detected_objects)
 
+    def cognex_get_cell(self, cell):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"GV{cell}", True).decode('utf-8')
+
+    def cognex_set_cell_int(self, cell, value):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SI{cell}{value}", False)
+
+    def cognex_set_cell_float(self, cell, value):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SF{cell}{value:.4f}", False)
+
+    def cognex_set_cell_string(self, cell, value):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        # check for allowed characters
+        if not re.match(r'^[\x20-\x7E]+$', value):
+            raise ValueError("Invalid characters in string")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SS{cell}{value}", False)
+
+    def cognex_trigger_acquisition(self):
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, "SW8", False)
+
+    def cognex_trigger_event(self, event):
+        event = int(event)
+        if event < 0 or event > 8:
+            raise ValueError("Invalid event number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SW{event}", False)
+
 
 def main():
 
@@ -232,10 +268,13 @@ def main():
     parser.add_argument("--cognex-host", type=str, required=True,
                         help="Cognex sensor IP address or hostname (required)")
     parser.add_argument("--cognex-port", type=int, default=3000, help="Cognex sensor port (default 3000)")
+    parser.add_argument("--cognex-password", type=str, default="",
+                        help="Cognex sensor password for native mode commands (default (empty))")
 
     args, _ = parser.parse_known_args()
 
     cognex_addr = (args.cognex_host, args.cognex_port)
+    cognex_pw = args.cognex_password
 
     RRC.RegisterStdRobDefServiceTypes(RRN)
     register_service_types_from_resources(RRN, __package__, ['edu.robotraconteur.cognexsensor.robdef'])
@@ -252,7 +291,7 @@ def main():
 
     with RR.ServerNodeSetup("cognex_Service", 59901) as node_setup:
 
-        cognex_inst = sensor_impl(sensor_info, cognex_addr)
+        cognex_inst = sensor_impl(sensor_info, cognex_addr, cognex_pw)
         cognex_inst.start()
 
         ctx = RRN.RegisterService("cognex", "edu.robotraconteur.cognexsensor.CognexSensor", cognex_inst)

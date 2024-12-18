@@ -63,4 +63,11 @@ object CognexSensor
     property IsochInfo isoch_info [readonly,nolock]
     property uint32 isoch_downsample [perclient]
     wire DeviceTime device_clock_now [readonly,nolock]
+
+    function string cognex_get_cell(string cell)
+    function void cognex_set_cell_int(string cell, int32 value)
+    function void cognex_set_cell_float(string cell, double value)
+    function void cognex_set_cell_string(string cell, string value)
+    function void cognex_trigger_acquisition()
+    function void cognex_trigger_event(int32 evt_num)
 end
