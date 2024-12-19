@@ -119,7 +119,10 @@ class sensor_impl(object):
                 cov_pose = self._named_pose_cov_type()
                 cov_pose.pose = named_pose
                 recognized_object.pose = cov_pose
-                recognized_object.confidence = float(info[3]) / 100.
+                if len(info) > 3:
+                    recognized_object.confidence = float(info[3]) / 100.
+                else:
+                    recognized_object.confidence = 1.0
                 recognized_objects.append(recognized_object)
 
                 # my type
@@ -188,7 +191,7 @@ class sensor_impl(object):
             if not self._running:
                 break
 
-            print(f"Received data: {string_data}")
+            # print(f"Received data: {string_data}")
 
             string_data1 = string_buf_rem + string_data
             string_data2 = string_data1.splitlines(keepends=True)
