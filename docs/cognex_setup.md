@@ -1,16 +1,11 @@
-# Cognex Setup for Robot Raconteur Driver
+# Cognex Setup for Robot Raconteur Driver using In-Sight Easy Builder
 
-These instructions are for Cognex In-Sight Vision System sensors. They were tested with a 7000 series
-device but should work for other models.
+These instructions are for Cognex In-Sight Vision System sensors using the In-Sight Easy Builder wizard. This
+mode is available for older devices that use In-Sight Explorer 6.5.0 and older. Newer devices will need
+to use the spreadsheet mode.
 
-## Driver Firewall Configuration
-
-The Cognex communicates with the Robot Raconteur driver over Ethernet using a TCP/IP "Reverse Socket". The
-Cognex initiates a TCP connection to port 3000 of the PC/device running the Robot Raconteur driver.
-The PC/device running the driver must be configured to allow connections to TCP port 3000. This requires
-either adding an exception to the firewall for the instance of python running the driver, or opening
-port 3000 to incoming connections. See the operating system documentation for more instructions about
-configuring the firewall.
+They were tested with a 7000 series device but should work for other models that use In-Sight Explorer 6.5.0
+and older.
 
 ## Device Setup
 
@@ -21,6 +16,9 @@ The Cognex In-Sight software must be installed and communicating with the sensor
 software. See the documentation for instructions to configure network settings and communication with the sensor.
 
 ![](images/ip_lookup.png)
+
+Save the IP address in this view. It will be needed later. The IP address can also be found by right
+clicking on the device in the left list panel In-Sight Network and clicking Properties.
 
 ### Connect to Device
 
@@ -56,10 +54,9 @@ Repeat for any additional objects to detect. Give each object a distinct name.
 
 ### Configure Communication
 
-Select "Communication" and set to TCP/IP. Configure the "Server Host Name" to the IP address of the
-computer/device running the driver. Use the `ipconfig` command on Windows or the `ip a` command on linux
-to find the IP address. There may be several IP addresses. Pick the one with the same subnet as the
-sensor IP address. The port should be 3000.
+Select "Communication" and set to TCP/IP. Configure the "Server Host Name" to be empty.
+When empty, the device will act as a server. Note that this is a change from previous versions
+of this driver that used a reverse socket. The port must be 3000.
 
 ![](images/cognex_communication.png)
 
@@ -100,3 +97,8 @@ Click "Save Job" and save the job on the low panel.
 ### Bring Device Online
 
 Click the green power icon on the upper toolbar to bring the device online to begin receiving data.
+
+## Run the Driver
+
+See the main README.md file for instructions to run the driver. The IP address of the Cognex device
+must be specified using the `--cognex-host=` parameter.
