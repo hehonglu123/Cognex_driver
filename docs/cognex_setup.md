@@ -1,5 +1,7 @@
 # Cognex Setup for Robot Raconteur Driver using In-Sight Easy Builder
 
+**These instructions are for using the In-Sight Easy Builder programming mode using In-Sight Explorer 6.5.0 and older. See the [spreadsheet instructions](cognex_setup_spreadsheet.md) for the spreadsheet programming mode.**
+
 These instructions are for Cognex In-Sight Vision System sensors using the In-Sight Easy Builder wizard. This
 mode is available for older devices that use In-Sight Explorer 6.5.0 and older. Newer devices will need
 to use the spreadsheet mode.

@@ -43,7 +43,11 @@ using `conda install` before using `pip` to avoid potential pip/conda conflicts.
 
 ## Configure the Sensor
 
-See [docs/cognex_setup](docs/cognex_setup.md) for instructions to configure the Cognex sensor.
+The Cognex sensor can be configured using either the Easy Builder or Spreadsheet programming interface. See
+the following documents for instructions in the `docs/` directory:
+
+- [Easy Builder Setup](docs/cognex_setup.md)
+- [Spreadsheet Setup](docs/cognex_setup_spreadsheet.md)
 
 ## Running the Driver
 

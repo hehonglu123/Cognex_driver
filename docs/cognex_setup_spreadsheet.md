@@ -1,5 +1,7 @@
 # Cognex Setup for Robot Raconteur Driver using Spreadsheet
 
+**These instructions are for using the spreadsheet programming mode. See the [EasyBuilder instructions](cognex_setup.md) for the EasyBuilder programming mode.**
+
 Cognex devices use a "spreadsheet" programming paradigm. This programming method is unusual, and is difficult to
 document. See the [Cognex Documentation](https://support.cognex.com/docs/is2d_2330/web/EN/InSight_Sheet/Content/Topics/GettingStarted/getstarted_sheet.htm)
 for full explanations on using the spreadsheet programming.
