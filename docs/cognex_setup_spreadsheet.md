@@ -42,7 +42,7 @@ if external is used.
 
 Create fixtures that will be used a templates to match in the camera view. This example
 uses the snippet PatMaxFixture.cxd that can be found in the "Snippets" under "Palette".
-Configure the snippet to find the desired object as needed. Add more fixtures if needed.![](images/spreadsheet/image_settings.png)
+Configure the snippet to find the desired object as needed. Add more fixtures if needed.
 This example uses two fixtures.
 
 ![](images/spreadsheet/fixture_config1.png)
