@@ -11,6 +11,7 @@ import com.robotraconteur.device.isoch
 import com.robotraconteur.device.clock
 import com.robotraconteur.sensor
 import com.robotraconteur.objectrecognition
+import com.robotraconteur.image
 
 using com.robotraconteur.identifier.Identifier
 using com.robotraconteur.device.Device
@@ -32,6 +33,7 @@ using com.robotraconteur.objectrecognition.ObjectRecognitionSensorInfo
 using com.robotraconteur.objectrecognition.ObjectRecognitionSensorData
 using com.robotraconteur.device.clock.DeviceClock
 using com.robotraconteur.device.clock.DeviceTime
+using com.robotraconteur.image.Image
 
 
 struct detection_obj
@@ -63,4 +65,12 @@ object CognexSensor
     property IsochInfo isoch_info [readonly,nolock]
     property uint32 isoch_downsample [perclient]
     wire DeviceTime device_clock_now [readonly,nolock]
+
+    function string cognex_get_cell(string cell)
+    function void cognex_set_cell_int(string cell, int32 value)
+    function void cognex_set_cell_float(string cell, double value)
+    function void cognex_set_cell_string(string cell, string value)
+    function void cognex_trigger_acquisition()
+    function void cognex_trigger_event(int32 evt_num)
+    function Image cognex_capture_image()
 end

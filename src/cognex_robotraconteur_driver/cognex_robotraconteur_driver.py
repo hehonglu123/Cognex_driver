@@ -12,6 +12,7 @@ from RobotRaconteurCompanion.Util.SensorDataUtil import SensorDataUtil
 from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
 from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 from RobotRaconteurCompanion.Util.RobDef import register_service_types_from_resources
+from RobotRaconteurCompanion.Util.ImageUtil import ImageUtil
 import drekar_launch_process
 import argparse
 import numpy as np
@@ -22,6 +23,11 @@ import copy
 import time
 import os
 import signal
+import select
+
+from ._native_client import native_exec_command, native_read_image
+import re
+import cv2
 
 host = '0.0.0.0'  # IP address of PC
 port = 3000
@@ -37,15 +43,12 @@ def multisplit(s, delims):
 
 
 class sensor_impl(object):
-    def __init__(self, object_sensor_info):
+    def __init__(self, object_sensor_info, cognex_addr, cognex_pw):
 
         self.object_recognition_sensor_info = object_sensor_info
         self.device_info = object_sensor_info.device_info
-
-        # initialize socket connection
-        self.s = socket.socket()
-        self.s.bind((host, port))
-        self.s.listen(5)
+        self.cognex_addr = cognex_addr
+        self.cognex_pw = cognex_pw
 
         # threading setting
         self._lock = threading.RLock()
@@ -56,6 +59,7 @@ class sensor_impl(object):
         self._identifier_util = IdentifierUtil(RRN)
         self._geometry_util = GeometryUtil(RRN)
         self._sensor_data_util = SensorDataUtil(RRN)
+        self._image_util = ImageUtil(RRN)
 
         # initialize objrecog types
         self._object_recognition_sensor_data_type = RRN.GetStructureType(
@@ -84,10 +88,6 @@ class sensor_impl(object):
 
     def close(self):
         self._running = False
-        try:
-            self.s.close()
-        except:
-            pass
         try:
             self.c.close()
         except:
@@ -119,7 +119,10 @@ class sensor_impl(object):
                 cov_pose = self._named_pose_cov_type()
                 cov_pose.pose = named_pose
                 recognized_object.pose = cov_pose
-                recognized_object.confidence = float(info[3]) / 100.
+                if len(info) > 3:
+                    recognized_object.confidence = float(info[3]) / 100.
+                else:
+                    recognized_object.confidence = 1.0
                 recognized_objects.append(recognized_object)
 
                 # my type
@@ -145,12 +148,14 @@ class sensor_impl(object):
 
         connected = False
         self.c = None
+        string_buf_rem = ""
 
         while self._running:
 
             if not connected:
+                string_buf_rem = ""
                 try:
-                    self.c, addr = self.s.accept()
+                    self.c = socket.create_connection(self.cognex_addr)
                     connected = True
                     print("Connected to Cognex sensor")
                 except:
@@ -161,6 +166,8 @@ class sensor_impl(object):
                 break
 
             try:
+                # Use select to wait for data
+                ready = select.select([self.c], [], [self.c], None)
                 string_data = self.c.recv(1024).decode("utf-8")
                 if len(string_data) == 0:
                     if connected:
@@ -183,6 +190,20 @@ class sensor_impl(object):
 
             if not self._running:
                 break
+
+            # print(f"Received data: {string_data}")
+
+            string_data1 = string_buf_rem + string_data
+            string_data2 = string_data1.splitlines(keepends=True)
+
+            if string_data2[-1][-1] not in ['\n', '\r']:
+                string_buf_rem = string_data2[-1]
+                string_data2.pop(-1)
+
+            if (len(string_data2) == 0):
+                continue
+
+            string_data = string_data2[-1].strip()
 
             try:
                 object_recognition_sensor_data, detection_objects = self.parse_sensor_string(string_data)
@@ -211,6 +232,45 @@ class sensor_impl(object):
                 return ret
             return copy.deepcopy(self._detected_objects)
 
+    def cognex_get_cell(self, cell):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"GV{cell}", True).decode('utf-8')
+
+    def cognex_set_cell_int(self, cell, value):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SI{cell}{value}", False)
+
+    def cognex_set_cell_float(self, cell, value):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SF{cell}{value:.4f}", False)
+
+    def cognex_set_cell_string(self, cell, value):
+        if not re.match(r'^[A-Z][0-9]{3}$', cell):
+            raise ValueError("Invalid cell number")
+        # check for allowed characters
+        if not re.match(r'^[\x20-\x7E]+$', value):
+            raise ValueError("Invalid characters in string")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SS{cell}{value}", False)
+
+    def cognex_trigger_acquisition(self):
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, "SW8", False)
+
+    def cognex_trigger_event(self, event):
+        event = int(event)
+        if event < 0 or event > 8:
+            raise ValueError("Invalid event number")
+        return native_exec_command(self.cognex_addr[0], self.cognex_pw, f"SW{event}", False)
+
+    def cognex_capture_image(self):
+        bmp_bytes = native_read_image(self.cognex_addr[0], self.cognex_pw)
+
+        img = cv2.imdecode(np.frombuffer(bmp_bytes, np.uint8), cv2.IMREAD_COLOR)
+
+        return self._image_util.array_to_image(img, 'bgr888')
+
 
 def main():
 
@@ -218,8 +278,16 @@ def main():
 
     parser.add_argument("--sensor-info-file", type=argparse.FileType('r'), default=None,
                         required=True, help="Cognex sensor info file (required)")
+    parser.add_argument("--cognex-host", type=str, required=True,
+                        help="Cognex sensor IP address or hostname (required)")
+    parser.add_argument("--cognex-port", type=int, default=3000, help="Cognex sensor port (default 3000)")
+    parser.add_argument("--cognex-password", type=str, default="",
+                        help="Cognex sensor password for native mode commands (default (empty))")
 
     args, _ = parser.parse_known_args()
+
+    cognex_addr = (args.cognex_host, args.cognex_port)
+    cognex_pw = args.cognex_password
 
     RRC.RegisterStdRobDefServiceTypes(RRN)
     register_service_types_from_resources(RRN, __package__, ['edu.robotraconteur.cognexsensor.robdef'])
@@ -236,7 +304,7 @@ def main():
 
     with RR.ServerNodeSetup("cognex_Service", 59901) as node_setup:
 
-        cognex_inst = sensor_impl(sensor_info)
+        cognex_inst = sensor_impl(sensor_info, cognex_addr, cognex_pw)
         cognex_inst.start()
 
         ctx = RRN.RegisterService("cognex", "edu.robotraconteur.cognexsensor.CognexSensor", cognex_inst)

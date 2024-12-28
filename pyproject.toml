@@ -1,7 +1,7 @@
 [project]
 
 name= "cognex-robotraconteur-driver"
-version = "0.2.0"
+version = "0.3.0"
 description = "Robot Raconteur driver for Cognex In-Sight Vision sensors "
 requires-python = ">=3.6"
 license = {text = "Apache-2.0"}
@@ -14,7 +14,8 @@ dependencies = [
     'RobotRaconteur',
     'RobotRaconteurCompanion',
     'numpy',
-    'drekar-launch-process'
+    'drekar-launch-process',
+    'opencv-contrib-python'
 ]
 readme = "README.md"
 

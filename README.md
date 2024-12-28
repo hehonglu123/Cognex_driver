@@ -2,12 +2,16 @@
 
 This package contains a Robot Raconteur driver for Cognex In-Sight Vision Systems. It has been tested
 with an 7000 series device, but should work with other series as well. The driver works using the TCP/IP
-communication feature that can be configured using the In-Sight software. The sensor initiates a connection
-to the driver (reverse socket), and streams position information to the driver. The device must be configured
+communication feature that can be configured using the In-Sight software. The device must be configured
 to use the correct ASCII string format.
 
 The driver implements the [Robot Raconteur Standard Type](https://github.com/robotraconteur/robotraconteur_standard_robdef)
-`com.robotraconteur.objectrecognition.ObjectRecognitionSensor`
+`com.robotraconteur.objectrecognition.ObjectRecognitionSensor`. This driver also adds functions specific to
+the Cognex device.
+
+This version of the driver uses the Cognex as a TCP/IP server and the driver acting as TCP client. This
+is different than older versions of the driver that use a "reverse socket", where the Cognex device is a TCP
+client, and the driver is a TCP server. See the setup instructions to make this adjustment.
 
 See the `examples/` directory for example clients using the driver.
 
@@ -39,25 +43,79 @@ using `conda install` before using `pip` to avoid potential pip/conda conflicts.
 
 ## Configure the Sensor
 
-See [docs/cognex_setup](docs/cognex_setup.md) for instructions to configure the Cognex sensor.
+The Cognex sensor can be configured using either the Easy Builder or Spreadsheet programming interface. See
+the following documents for instructions in the `docs/` directory:
+
+- [Easy Builder Setup](docs/cognex_setup.md)
+- [Spreadsheet Setup](docs/cognex_setup_spreadsheet.md)
 
 ## Running the Driver
 
 Start the driver:
 
 ```bash
-cognex-robotraconteur-driver --sensor-info-file=config/generic_cognex_sensor_default_config.yml
+cognex-robotraconteur-driver --sensor-info-file=config/generic_cognex_sensor_default_config.yml --cognex-host=192.168.1.175
 ```
 
 Optionally start using a module if the entrypoint does not work:
 
 ```bash
-python -m cognex_robotraconteur_driver --sensor-info-file=config/generic_cognex_sensor_default_config.yml
+python -m cognex_robotraconteur_driver --sensor-info-file=config/generic_cognex_sensor_default_config.yml --cognex-host=192.168.1.175
 ```
 
-The Cognex will attempt to connect to the driver and stream data. The `tools/socket_test.py` can be used
-to view the raw data to make sure the sensor is communicating. Note the driver must be stopped before using
-`tools/socket_test.py`
+Replace `192.168.1.175` with the address of the Cognex device. Use the Cognex software to read the IP address
+of the device and optionally assign a static IP address. It is recommended that the DHCP server be used to assign
+a static IP address by making an entry in the DHCP server pre-assigned address table. This is a common
+feature available in commercial cable routers and open-source router software like OpenWRT and PFSense.
+
+## Command Line Options
+
+- `--sensor-info-file=` - (required) The sensor info file. Info files are available in the `config/` directory. See the [object sensor info file documentation](https://github.com/robotraconteur/robotraconteur_standard_robdef/blob/master/docs/info_files/objectrecognition.md).
+- `--cognex-host=` - (required) The IP address or hostname of the Cognex sensor. Use the Cognex software to find and configure the sensor IP address.
+- `--cognex-port=` - The port that the Cognex is listening for connections. Default is port 3000.
+- `--cognex-password=` - The password for the Cognex native mode. By default the password is set to empty on the device. This is only used for the native commands in the next section.
+
+All Robot Raconteur node setup command line options are supported. See [Robot Raconteur Node Command Line Options](https://github.com/robotraconteur/robotraconteur/wiki/Command-Line-Options)
+
+## Cognex Native Mode Commands
+
+This driver uses root object type `edu.robotraconteur.cognexsensor.CognexSensor`. This type
+extends the standard type `com.robotraconteur.objectrecognition.ObjectRecognitionSensor`, and adds several functions
+that are specific to the Cognex sensor. These functions use the ["Native Mode Communications"](https://support.cognex.com/docs/is_613/web/EN/ise/Content/Communications_Reference/NativeModeCommunications.htm) which is an ASCII telnet protocol. These functions are
+very slow, and should be used sparingly. This driver mainly uses the TCP/IP communication protocol that
+is configured using the Easy Builder or Spreadsheet programming interface for real-time communication.
+
+- `function string cognex_get_cell(string cell)`
+
+  Get the value of a cell in the spreadsheet. Uses native mode command [`GV`](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Communications_Reference/GetValue_Spreadsheet.htm)
+  - `cell`: The cell to read value. Must have form `G005`, `B015`, etc.
+  - Returns: The value of the cell as a string
+- `function void cognex_set_cell_int(string cell, int32 value)`
+
+  Set the value of a cell to an integer. Cell must be type [EditInt()](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Reference/EditInt.htm). Uses native mode command [`SI`](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Communications_Reference/SetInteger_Spreadsheet.htm)
+  - `cell`: The cell to read value. Must have form `G005`, `B015`, etc.
+  - `value`: The new cell value.
+- `function void cognex_set_cell_float(string cell, double value)`
+
+  Set the value of a cell to a float. Cell must be type [EditFloat()](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Reference/EditFloat.htm).Uses native mode command [`SF`](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Communications_Reference/SetFloat_Spreadsheet.htm)
+  - `cell`: The cell to read value. Must have form `G005`, `B015`, etc.
+  - `value`: The new cell value.
+- `function void cognex_set_cell_string(string cell, string value)`
+
+  Set the value of a cell to a string. Cell must be type [EditString()](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Reference/EditString.htm).Uses native mode command [`SS`](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Communications_Reference/SetString_Spreadsheet.htm)
+  - `cell`: The cell to read value. Must have form `G005`, `B015`, etc.
+  - `value`: The new cell value.
+- `function void cognex_trigger_acquisition()`
+
+  Trigger acquisition of a new frame. Image acquisition must be set to "External". Uses native mode command [`SW8`](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Communications_Reference/SetEventAndWait.htm)
+- `function void cognex_trigger_event(int32 evt_num)`
+
+  Trigger an event. Uses native mode command [`SW`](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Communications_Reference/SetEventAndWait.htm)
+  - `evt_num`: An event number between 0 and 8.
+- `function Image cognex_capture_image()`
+
+  Captures an RGB or mono image from the cognex device and returns a standard Robot Raconteur image. This function
+  is very slow, and should only be used sparingly. Uses native mode command [`RB`](https://support.cognex.com/docs/is_574/web/EN/ise/Content/Communications_Reference/ReadBMP.htm)
 
 ## Using the Service
 
